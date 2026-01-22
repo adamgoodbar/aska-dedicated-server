@@ -3,6 +3,8 @@ name: Publish Docker Image
 on:
   push:
     branches: [ "main" ]
+    # Publish semver tags as releases.
+    tags: [ 'v*.*.*' ]
     paths-ignore:
       - 'README.md'
 
