@@ -15,16 +15,22 @@ variables=(
     "SAVE_ID" "save id"
 )
 
+# Escape special characters for sed replacement
+escape_sed() {
+    printf '%s' "$1" | sed 's/[&/\]/\\&/g'
+}
+
 for ((i=0; i<${#variables[@]}; i+=2)); do
     var_name=${variables[$i]}
     config_name=${variables[$i+1]}
 
-    if [ ! -z "${!var_name}" ]; then
+    if [ -n "${!var_name}" ]; then
         echo "${config_name} set to: ${!var_name}"
-        if grep -q "$config_name" "$APP_FILE"; then
-            sed -i "s|^$config_name =.*|$config_name = ${!var_name}|" "$APP_FILE"
+        escaped_value=$(escape_sed "${!var_name}")
+        if grep -q "^$config_name" "$APP_FILE"; then
+            sed -i "s|^$config_name =.*|$config_name = $escaped_value|" "$APP_FILE"
         else
-            echo -ne "\n$config_name = ${!var_name}" >> "$APP_FILE"
+            echo -e "\n$config_name = ${!var_name}" >> "$APP_FILE"
         fi
     fi
 done

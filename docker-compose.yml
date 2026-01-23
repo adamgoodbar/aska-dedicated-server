@@ -1,0 +1,16 @@
+services:
+  aska:
+    container_name: aska
+    image: ghcr.io/adamgoodbar/aska-dedicated-server:latest
+    # Or build locally:
+    # build: .
+    network_mode: bridge
+    env_file:
+      - .env
+    volumes:
+      - ./savegame:/home/container/.wine/drive_c/users/container/AppData/LocalLow/Sand Sailor Studio/Aska/data/server:rw
+      - ./server:/home/container/server_files:rw
+    ports:
+      - "27015:27015/udp"
+      - "27016:27016/udp"
+    restart: unless-stopped
