@@ -67,6 +67,39 @@ echo " "
 # dedicated server guide says to use the .bat which is just this:
 export SteamAppId=1898300
 
-# RUN
+# Pattern that triggers a restart
+RESTART_PATTERN="Uploading Crash Report"
+
+# RUN with output monitoring and auto-restart
 cd "$server_files"
-xvfb-run --auto-servernum wine $server_files/AskaServer.exe -nographics -batchmode -propertiesPath 'C:/users/container/AppData/LocalLow/Sand Sailor Studio/Aska/data/server/my_server_properties.txt' 2>&1 | tee /tmp/app.stdout
+
+while true; do
+  echo "Starting server..."
+
+  # Reset log file for this run
+  cat /dev/null > /tmp/app.stdout
+
+  # Start server in background, piping output to tee
+  xvfb-run --auto-servernum wine $server_files/AskaServer.exe -nographics -batchmode -propertiesPath 'C:/users/container/AppData/LocalLow/Sand Sailor Studio/Aska/data/server/my_server_properties.txt' 2>&1 | tee /tmp/app.stdout &
+  SERVER_PID=$!
+
+  # Monitor output for restart pattern
+  tail -f /tmp/app.stdout | while read line; do
+    echo "$line"
+    if echo "$line" | grep -q "$RESTART_PATTERN"; then
+      echo " "
+      echo "Detected restart pattern: $RESTART_PATTERN"
+      echo "Restarting server..."
+      echo " "
+      # Kill the server process and its children
+      pkill -P $SERVER_PID 2>/dev/null
+      kill $SERVER_PID 2>/dev/null
+      # Break out of the monitoring loop
+      pkill -P $$ tail 2>/dev/null
+      break
+    fi
+  done
+
+  # Wait a moment before restarting
+  sleep 5
+done
